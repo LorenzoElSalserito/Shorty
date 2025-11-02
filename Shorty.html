@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shorty</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #6366f1;
+            --primary-hover: #4f46e5;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --bg-color: #0f172a;
+            --surface-color: #1e293b;
+            --border-color: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, var(--bg-color) 0%, #1a1f3a 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated background elements */
+        .bg-decoration {
+            position: fixed;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), #a855f7);
+            opacity: 0.1;
+            filter: blur(100px);
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .bg-decoration:nth-child(1) {
+            width: 400px;
+            height: 400px;
+            top: -200px;
+            right: -100px;
+            animation-delay: 0s;
+        }
+
+        .bg-decoration:nth-child(2) {
+            width: 300px;
+            height: 300px;
+            bottom: -150px;
+            left: -50px;
+            animation-delay: 10s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(120deg); }
+            66% { transform: translate(-20px, 20px) rotate(240deg); }
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: var(--surface-color);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary-color), #a855f7);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            overflow: hidden;
+        }
+
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .logo-icon.emoji {
+            background: linear-gradient(135deg, var(--primary-color), #a855f7);
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-color), #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 16px;
+            margin-top: 8px;
+        }
+
+        .input-group {
+            margin-bottom: 24px;
+        }
+
+        .input-group.custom-id-group {
+            margin-top: -8px;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        label.small-label {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            gap: 12px;
+        }
+
+        input[type="url"], input[type="text"] {
+            flex: 1;
+            padding: 14px 16px;
+            background: var(--bg-color);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        input#customId {
+            padding: 10px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        input::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.6;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .result {
+            margin-top: 32px;
+            padding: 24px;
+            background: var(--bg-color);
+            border-radius: 16px;
+            border: 2px solid var(--border-color);
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result.show {
+            display: block;
+        }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            color: var(--success-color);
+            font-weight: 600;
+        }
+
+        .short-url-container {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .short-url {
+            flex: 1;
+            padding: 12px 16px;
+            background: var(--surface-color);
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--primary-color);
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .copy-btn {
+            padding: 10px 20px;
+            background: var(--surface-color);
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .copy-btn:hover {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .copy-btn.copied {
+            background: var(--success-color);
+            border-color: var(--success-color);
+        }
+
+        .links-history {
+            margin-top: 40px;
+            padding-top: 32px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .history-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .clear-btn {
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid var(--danger-color);
+            border-radius: 8px;
+            color: var(--danger-color);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .clear-btn:hover {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .link-item {
+            padding: 16px;
+            background: var(--bg-color);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .link-item:hover {
+            border-color: var(--primary-color);
+            transform: translateX(4px);
+        }
+
+        .link-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .original-link {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .short-link {
+            color: var(--primary-color);
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .link-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            padding: 6px 10px;
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .action-btn:hover {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 32px;
+            font-size: 14px;
+        }
+
+        .stats {
+            display: flex;
+            gap: 24px;
+            margin-top: 24px;
+            padding: 20px;
+            background: var(--bg-color);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-item {
+            flex: 1;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .container {
+                padding: 24px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .input-wrapper {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .short-url-container {
+                flex-direction: column;
+            }
+
+            .copy-btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .stats {
+                flex-direction: column;
+                gap: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-decoration"></div>
+    <div class="bg-decoration"></div>
+
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon" id="logoContainer">
+                    <img src="Shorty.png" alt="Shorty Logo">
+                </div>
+            </div>
+            <h1>Shorty</h1>
+            <p class="subtitle">Trasforma i tuoi link lunghi in URL brevi e facili da condividere</p>
+        </header>
+
+        <div class="input-group">
+            <label for="urlInput">Inserisci il tuo URL</label>
+            <div class="input-wrapper">
+                <input 
+                    type="url" 
+                    id="urlInput" 
+                    placeholder="https://esempio.com/un-link-molto-lungo..."
+                    autocomplete="off"
+                >
+                <button class="btn" id="shortenBtn">
+                    <span>Accorcia</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="input-group custom-id-group">
+            <label for="customId" class="small-label">
+                ID personalizzato (opzionale, 3-8 caratteri)
+            </label>
+            <input 
+                type="text" 
+                id="customId" 
+                placeholder="es: video1, promo, 2024"
+                maxlength="8"
+                autocomplete="off"
+            >
+        </div>
+
+        <div class="result" id="result">
+            <div class="result-header">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span>Link accorciato con successo!</span>
+            </div>
+            <div class="short-url-container">
+                <div class="short-url" id="shortUrl"></div>
+                <button class="copy-btn" id="copyBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    <span>Copia</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value" id="totalLinks">0</div>
+                <div class="stat-label">Link Totali</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="todayLinks">0</div>
+                <div class="stat-label">Creati Oggi</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="savedChars">0</div>
+                <div class="stat-label">Caratteri Risparmiati</div>
+            </div>
+        </div>
+
+        <div class="links-history">
+            <div class="history-header">
+                <h3 class="history-title">Cronologia Link</h3>
+                <button class="clear-btn" id="clearBtn">Cancella tutto</button>
+            </div>
+            <div id="historyList">
+                <div class="empty-state">
+                    <p>Nessun link ancora creato. Inizia accorciando il tuo primo URL!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Local storage for link management
+        class LinkShortener {
+            constructor() {
+                this.links = JSON.parse(localStorage.getItem('shorty_links')) || [];
+                this.init();
+                this.updateStats();
+            }
+
+            init() {
+                // Event listeners
+                document.getElementById('shortenBtn').addEventListener('click', () => this.shortenUrl());
+                document.getElementById('urlInput').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.shortenUrl();
+                });
+                document.getElementById('customId').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.shortenUrl();
+                });
+                document.getElementById('copyBtn').addEventListener('click', () => this.copyToClipboard());
+                document.getElementById('clearBtn').addEventListener('click', () => this.clearHistory());
+
+                // Load history
+                this.renderHistory();
+            }
+
+            generateId() {
+                // Generate a SHORT unique ID using base62 (a-z, A-Z, 0-9)
+                const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+                let id = '';
+                
+                // Check existing IDs to ensure uniqueness
+                const existingIds = this.links.map(link => link.id);
+                
+                do {
+                    id = '';
+                    // Generate a 4-6 character ID (starts with 4, increases if needed)
+                    const idLength = this.links.length < 14776 ? 4 : 
+                                    this.links.length < 916132 ? 5 : 6;
+                    
+                    for (let i = 0; i < idLength; i++) {
+                        id += chars[Math.floor(Math.random() * chars.length)];
+                    }
+                } while (existingIds.includes(id));
+                
+                return id;
+            }
+
+            isValidUrl(string) {
+                try {
+                    const url = new URL(string);
+                    return url.protocol === "http:" || url.protocol === "https:";
+                } catch (_) {
+                    return false;
+                }
+            }
+
+            shortenUrl() {
+                const urlInput = document.getElementById('urlInput');
+                const customIdInput = document.getElementById('customId');
+                const url = urlInput.value.trim();
+                const customId = customIdInput.value.trim();
+
+                if (!url) {
+                    this.showError('Per favore inserisci un URL');
+                    return;
+                }
+
+                if (!this.isValidUrl(url)) {
+                    this.showError('Per favore inserisci un URL valido');
+                    return;
+                }
+
+                // Validate custom ID if provided
+                if (customId) {
+                    if (customId.length < 3) {
+                        this.showError('L\'ID personalizzato deve essere almeno 3 caratteri');
+                        return;
+                    }
+                    
+                    // Check if custom ID is alphanumeric
+                    if (!/^[a-zA-Z0-9]+$/.test(customId)) {
+                        this.showError('L\'ID può contenere solo lettere e numeri');
+                        return;
+                    }
+                    
+                    // Check if custom ID already exists
+                    if (this.links.some(link => link.id === customId)) {
+                        this.showError('Questo ID è già in uso, scegline un altro');
+                        return;
+                    }
+                }
+
+                // Check if URL already exists
+                const existingLink = this.links.find(link => link.original === url);
+                
+                if (existingLink) {
+                    this.showResult(existingLink.short);
+                    return;
+                }
+
+                // Use custom ID or generate new one
+                const id = customId || this.generateId();
+                const shortUrl = `bm.it/${id}`;
+
+                // Save to storage
+                const linkData = {
+                    id: id,
+                    original: url,
+                    short: shortUrl,
+                    created: new Date().toISOString(),
+                    clicks: 0
+                };
+
+                this.links.unshift(linkData);
+                this.saveLinks();
+                this.showResult(shortUrl);
+                this.renderHistory();
+                this.updateStats();
+
+                // Clear inputs
+                urlInput.value = '';
+                customIdInput.value = '';
+
+                // Add pulse animation to button
+                document.getElementById('shortenBtn').classList.add('pulse');
+                setTimeout(() => {
+                    document.getElementById('shortenBtn').classList.remove('pulse');
+                }, 2000);
+            }
+
+            showResult(shortUrl) {
+                const resultDiv = document.getElementById('result');
+                const shortUrlDiv = document.getElementById('shortUrl');
+                
+                shortUrlDiv.textContent = shortUrl;
+                resultDiv.classList.add('show');
+
+                // Reset copy button
+                const copyBtn = document.getElementById('copyBtn');
+                copyBtn.classList.remove('copied');
+                copyBtn.querySelector('span').textContent = 'Copia';
+            }
+
+            showError(message) {
+                const urlInput = document.getElementById('urlInput');
+                urlInput.style.borderColor = 'var(--danger-color)';
+                urlInput.placeholder = message;
+                
+                setTimeout(() => {
+                    urlInput.style.borderColor = '';
+                    urlInput.placeholder = 'https://esempio.com/un-link-molto-lungo...';
+                }, 3000);
+            }
+
+            copyToClipboard() {
+                const shortUrl = document.getElementById('shortUrl').textContent;
+                
+                if (!shortUrl) return;
+
+                navigator.clipboard.writeText(shortUrl).then(() => {
+                    const copyBtn = document.getElementById('copyBtn');
+                    copyBtn.classList.add('copied');
+                    copyBtn.querySelector('span').textContent = 'Copiato!';
+                    
+                    setTimeout(() => {
+                        copyBtn.classList.remove('copied');
+                        copyBtn.querySelector('span').textContent = 'Copia';
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Errore nella copia:', err);
+                });
+            }
+
+            renderHistory() {
+                const historyList = document.getElementById('historyList');
+                
+                if (this.links.length === 0) {
+                    historyList.innerHTML = `
+                        <div class="empty-state">
+                            <p>Nessun link ancora creato. Inizia accorciando il tuo primo URL!</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                historyList.innerHTML = this.links.slice(0, 5).map(link => `
+                    <div class="link-item">
+                        <div class="link-info">
+                            <div class="original-link" title="${link.original}">${link.original}</div>
+                            <div class="short-link">${link.short}</div>
+                        </div>
+                        <div class="link-actions">
+                            <button class="action-btn" onclick="linkShortener.copyLink('${link.short}')">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                            </button>
+                            <button class="action-btn" onclick="linkShortener.deleteLink('${link.id}')">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            copyLink(shortUrl) {
+                navigator.clipboard.writeText(shortUrl).then(() => {
+                    // Visual feedback
+                    event.target.closest('.action-btn').style.background = 'var(--success-color)';
+                    setTimeout(() => {
+                        event.target.closest('.action-btn').style.background = '';
+                    }, 1000);
+                });
+            }
+
+            deleteLink(id) {
+                this.links = this.links.filter(link => link.id !== id);
+                this.saveLinks();
+                this.renderHistory();
+                this.updateStats();
+            }
+
+            clearHistory() {
+                if (confirm('Sei sicuro di voler cancellare tutta la cronologia?')) {
+                    this.links = [];
+                    this.saveLinks();
+                    this.renderHistory();
+                    this.updateStats();
+                    document.getElementById('result').classList.remove('show');
+                }
+            }
+
+            saveLinks() {
+                localStorage.setItem('shorty_links', JSON.stringify(this.links));
+            }
+
+            updateStats() {
+                // Total links
+                document.getElementById('totalLinks').textContent = this.links.length;
+
+                // Today's links
+                const today = new Date().toDateString();
+                const todayLinks = this.links.filter(link => 
+                    new Date(link.created).toDateString() === today
+                ).length;
+                document.getElementById('todayLinks').textContent = todayLinks;
+
+                // Characters saved
+                const savedChars = this.links.reduce((total, link) => {
+                    return total + (link.original.length - link.short.length);
+                }, 0);
+                document.getElementById('savedChars').textContent = savedChars > 0 ? savedChars : 0;
+            }
+        }
+
+        // Initialize the app
+        const linkShortener = new LinkShortener();
+    </script>
+</body>
+</html>
