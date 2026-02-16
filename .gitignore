@@ -69,6 +69,7 @@ src/components/icons/
 src/assets/logo.svg
 src/assets/base.css
 src/assets/main.css
+data/
 
 # Project specific
 NOTICE

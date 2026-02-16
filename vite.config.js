@@ -18,11 +18,12 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      // Proxy API requests to PHP server during development
-      '/api.php': 'http://localhost:8000',
-      // Proxy short codes (if needed for testing redirects in dev)
-      // Note: This might conflict with Vite's history fallback if not careful
-      // For now, we focus on API.
+      // Proxy API requests to Node server during development
+      '/api.php': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false
+      }
     }
   }
 })
