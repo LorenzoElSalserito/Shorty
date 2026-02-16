@@ -4,7 +4,7 @@ Questo documento descrive come testare Shorty e come integrarlo in qualsiasi sit
 
 ---
 
-## 🧪 Piano di Test
+## Piano di Test
 
 ### 1. Test Funzionali (Backend & Frontend)
 
@@ -38,7 +38,7 @@ Questo documento descrive come testare Shorty e come integrarlo in qualsiasi sit
 
 ---
 
-## 🌐 Guida all'Integrazione su Qualsiasi Sito
+## Guida all'Integrazione su Qualsiasi Sito
 
 Shorty è progettato per essere "drop-in", ovvero copiabile in una cartella e funzionante subito.
 
@@ -88,7 +88,7 @@ Vuoi mostrare il form di Shorty dentro una pagina esistente del tuo sito (es. `t
 
 ---
 
-## ⚠️ Risoluzione Problemi Comuni
+## Risoluzione Problemi Comuni
 
 *   **Errore 500 / Pagina Bianca**:
     *   Controlla i permessi della cartella `data`. Il server web (spesso utente `www-data`) deve poter scrivere.
@@ -98,3 +98,50 @@ Vuoi mostrare il form di Shorty dentro una pagina esistente del tuo sito (es. `t
     *   Se usi Apache, assicurati che `mod_rewrite` sia attivo (se usato) o che i file `.php` siano eseguiti.
 *   **CORS Error**:
     *   Se il frontend è su un dominio diverso dal backend, devi abilitare gli header CORS in `api.php`. (Di default Shorty assume stessa origine).
+
+---
+
+## Configurazione Server Web (Apache/Nginx)
+
+Per garantire che Shorty gestisca correttamente i redirect (es. `tuosito.com/AbCdEf`) senza entrare in conflitto con altri CMS (come Grav, WordPress, ecc.) o restituire 404, è fondamentale configurare correttamente le regole di rewrite.
+
+### Apache (.htaccess)
+
+Assicurati che nella cartella `public` (o nella root dove hai installato Shorty) sia presente un file `.htaccess` con il seguente contenuto. Questo file intercetta tutte le richieste che non corrispondono a file o cartelle reali e le invia a `index.php` di Shorty.
+
+```apache
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Se Shorty è in una sottocartella (es. /shorty/), decommenta e adatta la riga seguente:
+    # RewriteBase /shorty/
+
+    # Consenti l'accesso diretto a file e directory esistenti (immagini, css, js, ecc.)
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+
+    # Tutte le altre richieste vengono gestite da index.php
+    RewriteRule ^(.*)$ index.php [QSA,L]
+</IfModule>
+```
+
+**Nota:** Se Shorty è installato in una sottocartella (es. `tuosito.com/shorty`), il file `.htaccess` deve trovarsi dentro quella sottocartella.
+
+### Nginx
+
+Se usi Nginx, aggiungi questo blocco alla configurazione del tuo `server` (o `location` se in sottocartella):
+
+```nginx
+location / {
+    try_files $uri $uri/ /index.php?$query_string;
+}
+
+# Se Shorty è in una sottocartella (es. /shorty)
+location /shorty {
+    try_files $uri $uri/ /shorty/index.php?$query_string;
+}
+```
+
+### Verifica Indipendenza
+
+Con queste configurazioni, Shorty funzionerà correttamente sia se installato nella root di un dominio/sottodominio, sia se installato in una sottocartella, intercettando i codici brevi e gestendo i redirect prima che il server web restituisca un 404.

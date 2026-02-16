@@ -70,6 +70,7 @@ src/assets/logo.svg
 src/assets/base.css
 src/assets/main.css
 data/
+*.zip
 
 # Project specific
 NOTICE

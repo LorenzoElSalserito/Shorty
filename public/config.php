@@ -8,7 +8,8 @@ return [
 
     // Path to data directory (must be writable)
     // Relative to this file or absolute
-    'data_dir' => __DIR__ . '/../data',
+    // Changed to be inside the same directory for portability
+    'data_dir' => __DIR__ . '/data',
 
     // Allowed TTLs in days
     'allowed_ttls' => [7, 15, 30, 90],
