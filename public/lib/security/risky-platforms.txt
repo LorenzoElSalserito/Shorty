@@ -1,0 +1,26 @@
+# Free hosting / user-content platforms: allowed, but never promoted to TRUSTED_LOCAL.
+000webhostapp.com
+blogspot.com
+firebaseapp.com
+web.app
+github.io
+gitlab.io
+glitch.me
+herokuapp.com
+netlify.app
+vercel.app
+pages.dev
+workers.dev
+r2.dev
+weebly.com
+wixsite.com
+webflow.io
+duckdns.org
+ngrok.io
+ngrok-free.app
+sites.google.com
+docs.google.com
+forms.gle
+storage.googleapis.com
+dropbox.com
+ipfs.io

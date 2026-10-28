@@ -1,0 +1,8 @@
+User-agent: *
+Disallow: /internal/
+Disallow: /go.php
+Disallow: /s/
+Disallow: /?s=
+Disallow: /?r=
+Disallow: /*?s=
+Disallow: /*?r=

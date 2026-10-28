@@ -5,25 +5,29 @@ import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
 // https://vite.dev/config/
-export default defineConfig({
-  base: './', // Relative paths for assets
+export default defineConfig(({ command }) => ({
+  base: './', // Relative paths: the build works in a domain root, a subdomain or a subfolder
   plugins: [
-    vue(),
-    vueDevTools(),
+    vue({
+      template: { compilerOptions: { isCustomElement: (tag) => tag.startsWith('altcha-') } },
+    }),
+    command === 'serve' && vueDevTools(),
   ],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  build: {
+    // No inline data: URIs for scripts/workers, so the strict CSP (script-src 'self') holds.
+    assetsInlineLimit: 0,
+  },
+  worker: { format: 'es' },
   server: {
-    proxy: {
-      // Proxy API requests to Node server during development
-      '/api.php': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-        secure: false
-      }
-    }
-  }
-})
+    // Development: PHP backend on `php -S localhost:8000 -t public` (see README).
+    proxy: Object.fromEntries(['/internal', '/go.php', '/static', '/api.php'].map((p) => [p, {
+      target: 'http://localhost:8000',
+      changeOrigin: false,
+    }])),
+  },
+}))

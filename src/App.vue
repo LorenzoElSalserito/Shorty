@@ -1,218 +1,246 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, onMounted, ref, nextTick } from 'vue'
+import './altcha.js'
+import { bootstrap, post } from './api.js'
+import AltchaBox from './components/AltchaBox.vue'
+
+const TTL_LABELS = { '5h': '5 ore', '1d': '1 giorno', '7d': '7 giorni' }
+const CATEGORY_LABELS = {
+  phishing: 'Phishing (furto di credenziali)',
+  malware: 'Malware o download pericoloso',
+  scam: 'Truffa',
+  impersonation: 'Si spaccia per qualcun altro',
+  other: 'Altro contenuto dannoso',
+}
+
+const params = new URLSearchParams(window.location.search)
+const reportCode = /^[A-Za-z0-9]{10}$/.test(params.get('r') || '') ? params.get('r') : null
+
+const ready = ref(false)
+const fatal = ref(null)
+const config = ref({ ttls: ['5h', '1d', '7d'], quota: { max: 3, window_hours: 24 }, report_categories: [] })
+const remaining = ref(null)
+const lockdown = ref(false)
 
 const url = ref('')
-const ttl = ref(7)
-const result = ref(null)
+const ttl = ref('5h')
+const category = ref('')
+const busy = ref(false)
 const error = ref(null)
-const loading = ref(false)
+const result = ref(null)
+const reported = ref(null)
 const copied = ref(false)
+const altcha = ref(null)
+const resultInput = ref(null)
 
-const ttls = [7, 15, 30, 90]
+const canSubmit = computed(() => !busy.value && !(lockdown.value && !reportCode))
+
+onMounted(async () => {
+  try {
+    const data = await bootstrap()
+    config.value = data
+    ttl.value = data.default_ttl
+    remaining.value = data.remaining
+    lockdown.value = data.lockdown
+  } catch (e) {
+    fatal.value = e.message
+  } finally {
+    ready.value = true
+  }
+})
+
+const fail = (e) => {
+  error.value = e.message
+  if (e.code === 'DAILY_QUOTA') remaining.value = 0
+  if (e.code === 'SECURITY_LOCKDOWN') lockdown.value = true
+}
+
+const solve = async () => {
+  const payload = await altcha.value.solve()
+  if (!payload) throw new Error('Verifica anti-bot non completata. Riprova.')
+  return payload
+}
 
 const shorten = async () => {
   error.value = null
   result.value = null
-  loading.value = true
   copied.value = false
-
+  const value = url.value.trim()
+  if (!value) {
+    error.value = 'Inserisci il link da accorciare.'
+    return
+  }
+  if (!/^https:\/\//i.test(value)) {
+    error.value = 'Il link deve iniziare con https://'
+    return
+  }
+  busy.value = true
   try {
-    if (!url.value) throw new Error("Inserisci un URL")
-
-    if (!url.value.startsWith('http://') && !url.value.startsWith('https://')) {
-      throw new Error("L'URL deve iniziare con http:// o https://")
-    }
-
-    const response = await fetch('api.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: url.value, ttl_days: ttl.value })
-    })
-
-    const data = await response.json()
-
-    if (!response.ok) {
-      throw new Error(data.message || "Errore durante la creazione del link")
-    }
-
-    result.value = data
+    const payload = await solve()
+    const data = await post('internal/create.php', { url: value, ttl: ttl.value, altcha: payload })
+    // The server returns a relative path: the absolute URL comes from the page itself,
+    // so it is correct in a domain root, a subdomain or a subfolder.
+    result.value = { ...data, short_url: new URL(data.short_path, window.location.href).toString() }
+    remaining.value = data.remaining
+    url.value = ''
+    await nextTick()
+    resultInput.value?.select()
   } catch (e) {
-    error.value = e.message
+    fail(e)
   } finally {
-    loading.value = false
+    altcha.value?.reset()
+    busy.value = false
   }
 }
 
-const copyToClipboard = async () => {
-  if (!result.value) return
+const report = async () => {
+  error.value = null
+  if (!category.value) {
+    error.value = 'Scegli un motivo per la segnalazione.'
+    return
+  }
+  busy.value = true
+  try {
+    const payload = await solve()
+    const data = await post('internal/report-submit.php', { code: reportCode, category: category.value, altcha: payload })
+    reported.value = data
+  } catch (e) {
+    fail(e)
+  } finally {
+    altcha.value?.reset()
+    busy.value = false
+  }
+}
+
+const copy = async () => {
   try {
     await navigator.clipboard.writeText(result.value.short_url)
     copied.value = true
-    setTimeout(() => copied.value = false, 2000)
-  } catch (err) {
-    console.error('Failed to copy', err)
+    setTimeout(() => (copied.value = false), 2000)
+  } catch {
+    resultInput.value?.select()
   }
 }
+
+const formatDate = (ts) => new Date(ts * 1000).toLocaleString('it-IT', { dateStyle: 'medium', timeStyle: 'short' })
 </script>
 
 <template>
-  <div class="container-fluid min-vh-100 d-flex flex-column justify-content-center align-items-center bg-gradient-custom position-relative">
-
-    <!-- Splash Screen Overlay -->
-    <div v-if="loading" class="splash-screen d-flex flex-column justify-content-center align-items-center">
-      <div class="spinner-grow text-light mb-3" style="width: 3rem; height: 3rem;" role="status">
-        <span class="visually-hidden">Loading...</span>
-      </div>
-      <h2 class="text-white fw-bold animate-pulse">Generazione Short Link...</h2>
-      <p class="text-white-50">Stiamo preparando il tuo link sicuro</p>
-    </div>
-
-    <div class="card shadow-lg p-4 rounded-4" style="max-width: 600px; width: 100%; background: rgba(255, 255, 255, 0.95);">
-      <header class="text-center mb-4">
-        <img src="/Shorty.png" alt="Shorty Logo" class="img-fluid mb-3" style="max-height: 80px;">
-        <h1 class="h2 text-navy">Shorty</h1>
-        <p class="text-muted">URL Shortener semplice e sicuro</p>
+  <div class="min-vh-100 d-flex flex-column align-items-center py-4 py-md-5 px-3">
+    <div class="shorty-card p-4 p-md-5 w-100" style="max-width: 640px">
+      <header class="d-flex align-items-center gap-3 mb-4">
+        <img :src="'static/logo-128.png'" alt="" width="56" height="56" class="rounded-3">
+        <div>
+          <h1 class="h3 mb-0">Shorty</h1>
+          <p class="mb-0 text-muted-shorty">Link brevi a scadenza, con controlli anti-abuso</p>
+        </div>
       </header>
 
-      <main>
-        <div class="mb-3">
-          <label for="url" class="form-label fw-bold text-navy">Incolla il tuo link lungo</label>
-          <div class="input-group">
-            <span class="input-group-text bg-white border-end-0"><i class="bi bi-link-45deg"></i></span>
-            <input
-              id="url"
-              v-model="url"
-              type="url"
-              class="form-control border-start-0 ps-0"
-              placeholder="https://esempio.com/pagina-molto-lunga..."
-              @keyup.enter="shorten"
-              :disabled="loading"
-            >
-          </div>
+      <div v-if="!ready" class="text-center py-5" role="status">
+        <div class="spinner-border" aria-hidden="true"></div>
+        <span class="visually-hidden">Caricamento…</span>
+      </div>
+
+      <div v-else-if="fatal" class="alert alert-danger" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2" aria-hidden="true"></i>{{ fatal }}
+      </div>
+
+      <!-- Abuse report -->
+      <main v-else-if="reportCode">
+        <h2 class="h5">Segnala un link</h2>
+        <p class="text-muted-shorty">Link <code>{{ reportCode }}</code>. Le segnalazioni sono anonime: Shorty conserva solo identificatori pseudonimi.</p>
+        <div v-if="reported" class="alert alert-success" role="status">
+          <i class="bi bi-check-circle-fill me-2" aria-hidden="true"></i>
+          Grazie, segnalazione registrata.
+          <span v-if="reported.quarantined">Il link è stato messo in quarantena.</span>
         </div>
+        <form v-else @submit.prevent="report" novalidate>
+          <fieldset class="mb-3">
+            <legend class="form-label fw-semibold fs-6">Motivo</legend>
+            <div v-for="c in config.report_categories" :key="c" class="form-check">
+              <input :id="'cat-' + c" v-model="category" class="form-check-input" type="radio" name="category" :value="c" :disabled="busy">
+              <label class="form-check-label" :for="'cat-' + c">{{ CATEGORY_LABELS[c] || c }}</label>
+            </div>
+          </fieldset>
+          <AltchaBox ref="altcha" action="report" class="mb-3" />
+          <button type="submit" class="btn btn-shorty w-100" :disabled="!canSubmit">
+            <span v-if="busy" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+            Invia segnalazione
+          </button>
+        </form>
+        <div v-if="error" class="alert alert-danger mt-3 mb-0" role="alert">{{ error }}</div>
+        <p class="mt-3 mb-0"><a href="./">Torna a Shorty</a></p>
+      </main>
 
-        <div class="mb-4">
-          <label class="form-label fw-bold text-navy">Scadenza link</label>
-          <div class="d-flex gap-2 flex-wrap">
-            <button
-              v-for="days in ttls"
-              :key="days"
-              type="button"
-              class="btn flex-grow-1"
-              :class="ttl === days ? 'btn-navy' : 'btn-outline-secondary'"
-              @click="ttl = days"
-              :disabled="loading"
-            >
-              {{ days }} giorni
-            </button>
-          </div>
+      <!-- Create -->
+      <main v-else>
+        <div v-if="lockdown" class="alert alert-warning" role="status">
+          La creazione di nuovi link è sospesa per manutenzione di sicurezza.
         </div>
+        <form @submit.prevent="shorten" novalidate>
+          <div class="mb-3">
+            <label for="url" class="form-label fw-semibold">Link da accorciare</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-link-45deg" aria-hidden="true"></i></span>
+              <input id="url" v-model="url" type="url" inputmode="url" autocomplete="off" class="form-control"
+                placeholder="https://esempio.it/pagina" maxlength="2048" required :disabled="busy || lockdown"
+                aria-describedby="url-help">
+            </div>
+            <div id="url-help" class="form-text text-muted-shorty">Solo indirizzi <strong>https://</strong> con nome di dominio.</div>
+          </div>
 
-        <button class="btn-navy w-100 py-2 mb-3 rounded-3 fw-bold shadow-sm" @click="shorten" :disabled="loading">
-          Accorcia Link
-        </button>
+          <fieldset class="mb-3">
+            <legend class="form-label fw-semibold fs-6">Scadenza</legend>
+            <div class="d-flex gap-2" role="radiogroup">
+              <template v-for="t in config.ttls" :key="t">
+                <input :id="'ttl-' + t" v-model="ttl" type="radio" class="btn-check" name="ttl" :value="t" :disabled="busy || lockdown">
+                <label class="btn btn-ttl flex-fill" :for="'ttl-' + t">{{ TTL_LABELS[t] || t }}</label>
+              </template>
+            </div>
+          </fieldset>
 
-        <div v-if="error" class="alert alert-danger mt-3 d-flex align-items-center">
-          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+          <AltchaBox ref="altcha" action="create" class="mb-3" />
+
+          <button type="submit" class="btn btn-shorty w-100" :disabled="!canSubmit">
+            <span v-if="busy" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+            {{ busy ? 'Stiamo applicando i controlli anti-abuso…' : 'Accorcia link' }}
+          </button>
+        </form>
+
+        <div v-if="error" class="alert alert-danger mt-3 mb-0 d-flex" role="alert">
+          <i class="bi bi-exclamation-triangle-fill me-2" aria-hidden="true"></i>
           <div>{{ error }}</div>
         </div>
 
-        <div v-if="result" class="mt-4 p-3 bg-light rounded-3 border border-success-subtle fade-in">
-          <label class="form-label fw-bold text-success">Il tuo Short Link è pronto!</label>
-          <div class="input-group mb-2">
-            <input type="text" class="form-control bg-white" :value="result.short_url" readonly>
-            <button class="btn btn-outline-primary" type="button" @click="copyToClipboard">
-              {{ copied ? 'Copiato!' : 'Copia' }}
+        <section v-if="result" class="mt-4 p-3 shorty-notice" aria-live="polite">
+          <label for="short" class="form-label fw-semibold">Il tuo link breve</label>
+          <div class="input-group">
+            <input id="short" ref="resultInput" class="form-control" :value="result.short_url" readonly>
+            <button class="btn btn-shorty" type="button" @click="copy">
+              <i class="bi me-1" :class="copied ? 'bi-check2' : 'bi-clipboard'" aria-hidden="true"></i>{{ copied ? 'Copiato' : 'Copia' }}
             </button>
           </div>
-          <div class="small text-muted text-center">
-            Scade il: {{ new Date(result.expires_at).toLocaleDateString() }}
-          </div>
+          <p class="small mb-0 mt-2 text-muted-shorty">
+            Scade il {{ formatDate(result.expires_at) }}.
+            <span v-if="result.deduplicated">Avevi già creato questo link: ti restituiamo lo stesso.</span>
+          </p>
+        </section>
+
+        <div class="mt-4 p-3 shorty-notice small">
+          <p class="mb-1"><i class="bi bi-shield-check me-1" aria-hidden="true"></i>
+            Per proteggere il servizio, ogni indirizzo può creare al massimo {{ config.quota.max }} link ogni {{ config.quota.window_hours }} ore.
+            <strong v-if="remaining !== null">Disponibili ora: {{ remaining }}.</strong>
+          </p>
+          <p class="mb-0">Chi apre il link vede sempre la destinazione prima di uscire da Shorty. Shorty non garantisce la sicurezza dei siti di destinazione e può bloccare link segnalati.</p>
         </div>
       </main>
 
-      <footer class="mt-5 text-center text-muted small">
-        <div class="mb-2">
-          <a href="LICENSE" target="_blank" class="text-decoration-none text-secondary">Licenza AGPLv3</a>
-          <span class="mx-2">•</span>
-          <a href="https://github.com/LorenzoElSalserito/Shorty" target="_blank" class="text-decoration-none text-secondary">Codice Sorgente</a>
-        </div>
-        <p class="mb-0">&copy; {{ new Date().getFullYear() }} Lorenzo DM - Shorty. Nessun tracciamento personale.</p>
+      <footer class="mt-4 pt-3 border-top text-center small text-muted-shorty">
+        <a href="LICENSE" class="link-secondary">Licenza AGPLv3</a>
+        <span class="mx-2" aria-hidden="true">·</span>
+        <a href="https://github.com/LorenzoElSalserito/Shorty" class="link-secondary" rel="noopener noreferrer">Codice sorgente</a>
+        <p class="mb-0 mt-1">Nessun tracciamento, nessun servizio esterno. © Lorenzo DM</p>
       </footer>
     </div>
   </div>
 </template>
-
-<style>
-/* Global styles override */
-body {
-  font-family: 'Segoe UI', Roboto, "Helvetica Neue", Arial, sans-serif;
-}
-
-/* Custom Colors */
-.text-navy { color: #001f3f; }
-
-.bg-gradient-custom {
-  background: linear-gradient(135deg, #001f3f 0%, #77dd77 50%, #ff6961 100%);
-  background-size: 200% 200%;
-  animation: gradientBG 15s ease infinite;
-}
-
-@keyframes gradientBG {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-.btn-navy {
-  background-color: #001f3f;
-  color: white;
-  border-color: #001f3f;
-}
-.btn-navy:hover {
-  background-color: #003366;
-  color: white;
-}
-
-.btn-pastel-green {
-  background-color: #77dd77;
-  border-color: #77dd77;
-  color: #003366;
-}
-.btn-pastel-green:hover {
-  background-color: #66cc66;
-  color: #003366;
-}
-
-/* Splash Screen */
-.splash-screen {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 31, 63, 0.85); /* Navy blue with opacity */
-  backdrop-filter: blur(5px);
-  z-index: 1050;
-  border-radius: 0;
-}
-
-.animate-pulse {
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0% { opacity: 0.6; }
-  50% { opacity: 1; }
-  100% { opacity: 0.6; }
-}
-
-.fade-in {
-  animation: fadeIn 0.5s ease-in;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-</style>

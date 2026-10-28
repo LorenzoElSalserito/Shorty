@@ -1,32 +1,11 @@
 <?php
-header('Content-Type: application/json');
+// The public JSON API was removed in Shorty 2 (abuse prevention).
 
-// Load config
-$config = require_once 'config.php';
-require_once 'lib/Shorty.php';
+declare(strict_types=1);
 
-try {
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        throw new Exception("Method not allowed", 405);
-    }
-
-    $input = json_decode(file_get_contents('php://input'), true);
-    if (!$input) {
-        throw new Exception("Invalid JSON", 400);
-    }
-
-    $url = $input['url'] ?? '';
-    $ttl = isset($input['ttl_days']) ? (int)$input['ttl_days'] : $config['default_ttl'];
-
-    $shorty = new Shorty($config);
-    $result = $shorty->shorten($url, $ttl);
-
-    echo json_encode($result);
-
-} catch (Exception $e) {
-    http_response_code($e->getCode() ?: 500);
-    echo json_encode([
-        'error_code' => $e->getCode(),
-        'message' => $e->getMessage()
-    ]);
-}
+http_response_code(410);
+header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store');
+header('X-Robots-Tag: noindex, nofollow, noarchive');
+header('X-Content-Type-Options: nosniff');
+echo '{"error":"GONE","message":"Public API removed"}';

@@ -1,14 +1,24 @@
+# Shorty 2 — optional Apache/LiteSpeed enhancements. Shorty works without them
+# (query routing: /?s=CODE); nothing here needs editing, in root or in a subfolder.
+
+Options -Indexes
+DirectoryIndex index.php
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+</IfModule>
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteBase /
 
-    # Protect data directory from direct access
-    RewriteRule ^data/ - [F,L]
+    # Internal code, vendor and runtime data are never served (PHP guards protect them anyway).
+    RewriteRule (^|/)(lib|runtime)(/|$) - [F,L]
+    RewriteRule (^|/)\. - [F,L]
 
-    # Allow access to existing files and directories
+    # Optional pretty short links: /s/AbCdEf1234 -> index.php?s=AbCdEf1234
+    RewriteRule ^s/([A-Za-z0-9]{10})/?$ index.php?s=$1 [L,QSA]
+
+    # Anything else that is not a real file goes to index.php (404 / 410 for legacy links).
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-
-    # Route everything else to index.php
-    RewriteRule ^(.*)$ index.php [QSA,L]
+    RewriteRule ^ index.php [L]
 </IfModule>

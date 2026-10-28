@@ -59,6 +59,8 @@ Desktop.ini
 
 # Documentation & Manuals (Keep README.md and LICENSE)
 PRD.md
+Plan.md
+Shorty_prd.md
 # OPS_MANUAL.md
 
 # Unused Vue boilerplate components (if you want to keep source clean)
@@ -74,3 +76,15 @@ data/
 
 # Project specific
 NOTICE
+
+# Shorty 2 runtime data and secrets (never committed)
+/public/runtime/
+/dist/runtime/
+runtime/
+*.secret.php
+secrets.php
+
+# Build-time vendored dependencies and compiled threat feed (rebuilt by build:release)
+/public/lib/vendor/
+/public/lib/security/feeds/domains/
+/public/lib/security/feeds/METADATA.json

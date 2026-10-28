@@ -1,0 +1,17 @@
+{
+    "name": "lorenzoelsalserito/shorty",
+    "description": "Self-hosted, database-free, abuse-resistant link shortener.",
+    "type": "project",
+    "license": "AGPL-3.0-or-later",
+    "require": {
+        "php": ">=8.3",
+        "altcha-org/altcha": "2.3.0"
+    },
+    "config": {
+        "vendor-dir": "public/lib/vendor",
+        "optimize-autoloader": true,
+        "classmap-authoritative": true,
+        "platform-check": false,
+        "sort-packages": true
+    }
+}
